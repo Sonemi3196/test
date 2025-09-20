@@ -1,0 +1,708 @@
+            const [tapEffects, setTapEffects] = useState([]);
+            const [bonusTexts, setBonusTexts] = useState([]);
+            const [language, setLanguage] = useState('ko'); // 'ko' 또는 'ja'
+            
+            const goodEmoji = "🇯🇵";
+            const badEmoji = "🇰🇷";
+            
+            const gameIntervalRef = useRef(null);
+            const characterTimersRef = useRef({});
+            const gameAreaRef = useRef(null);
+
+            // 다국어 텍스트
+            const texts = {
+                ko: {
+                    title: "🏝️ 독도 방어 게임 🏝️",
+                    score: "점수",
+                    timeLeft: "남은 시간",
+                    stage: "스테이지",
+                    clearCondition: "0점 이상으로 클리어",
+                    current: "현재",
+                    max: "최대",
+                    gameReady: "게임 준비 완료!",
+                    startButton: "게임 시작",
+                    pressStart: "아래 버튼을 눌러 시작",
+                    stageCleared: "🎉 스테이지 클리어! 🎉",
+                    stageClearMsg: "0점 이상을 유지하여 클리어했습니다!",
+                    nextStage: "다음 스테이지로",
+                    allClear: "🏆 전체 스테이지 클리어! 🏆",
+                    congratulations: "축하합니다!",
+                    gameOver: "💀 게임 오버 💀",
+                    timeUp: "시간 종료!",
+                    zeroScore: "0점으로 게임 오버",
+                    remaining: "남음",
+                    reset: "리셋",
+                    howToPlay: "게임 방법",
+                    characters: "캐릭터:",
+                    targetToHit: "처치 대상",
+                    absoluteAvoid: "절대 회피",
+                    hitPoints: "+20~40점 / 놓치면 -200점",
+                    instantZero: "밟으면 즉시 0점",
+                    rule1: "• 🇯🇵를 처치하면 +20~40점, 놓치면 -200점의 대폭 감점",
+                    rule2: "• 🇰🇷를 밟으면 즉시 0점 (한 방에 게임 오버)",
+                    rule3: "• 점수가 0이 되는 순간 게임 오버",
+                    rule4: "• 스테이지가 올라갈수록 🇯🇵의 이동 속도가 빨라짐",
+                    rule5: "• 제한 시간이 짧아 매우 전략적인 플레이 필요",
+                    rule6: "• 제한 시간 내에 점수가 1점 이상 남으면 스테이지 클리어",
+                    bonusTexts: ["대한민국 만세", "일본 죽어라", "사스가", "쵸아", "만세"]
+                },
+                ja: {
+                    title: "🏝️ 独島防衛ゲーム 🏝️",
+                    score: "スコア",
+                    timeLeft: "残り時間",
+                    stage: "ステージ",
+                    clearCondition: "0点以上でクリア",
+                    current: "現在",
+                    max: "MAX",
+                    gameReady: "ゲーム準備完了！",
+                    startButton: "ゲーム開始",
+                    pressStart: "下のボタンを押してスタート",
+                    stageCleared: "🎉 ステージクリア！ 🎉",
+                    stageClearMsg: "0点以上を維持してクリアしました！",
+                    nextStage: "次のステージへ",
+                    allClear: "🏆 全ステージクリア！ 🏆",
+                    congratulations: "おめでとうございます！",
+                    gameOver: "💀 ゲームオーバー 💀",
+                    timeUp: "時間切れ！",
+                    zeroScore: "スコア0点でゲームオーバー",
+                    remaining: "残り",
+                    reset: "リセット",
+                    howToPlay: "ゲームの遊び方",
+                    characters: "キャラクター:",
+                    targetToHit: "討ち取る対象",
+                    absoluteAvoid: "絶対避ける",
+                    hitPoints: "+20~40点 / 逃すと-200点",
+                    instantZero: "踏むと即座に0点",
+                    rule1: "• 🇯🇵を討ち取ると+20~40点、逃すと-200点の大幅減点",
+                    rule2: "• 🇰🇷を踏むと即座に0点（一発ゲームオーバー）",
+                    rule3: "• スコアが0になった瞬間にゲームオーバー",
+                    rule4: "• ステージが上がるにつれて🇯🇵の移動速度が上がる",
+                    rule5: "• 制限時間が短く、非常に戦略的なプレイが必要",
+                    rule6: "• 制限時間内にスコアが1点以上残ればステージクリア",
+                    bonusTexts: ["ﾃﾊﾝﾐﾝｸﾞｸﾏﾝｾ", "ｲﾙﾎﾞﾝﾁｭｺﾞﾗ", "ｻｽｶﾞ", "ﾁｮｱ", "ﾏﾝｾ"]
+                }
+            };
+
+            const t = texts[language];<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>独島防衛ゲーム</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        
+        // Lucide React アイコンの代替実装
+        const Play = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5,3 19,12 5,21" />
+            </svg>
+        );
+        
+        const RotateCcw = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="1,4 1,10 7,10" />
+                <path d="M3.51,15a9,9,0,0,0,13.83-6.36A9,9,0,0,0,3.51,15Z" />
+            </svg>
+        );
+
+        const FlySwatterGame = () => {
+            const [score, setScore] = useState(500);
+            const [timeLeft, setTimeLeft] = useState(20);
+            const [stage, setStage] = useState(1);
+            const [gameStatus, setGameStatus] = useState('setup');
+            const [characters, setCharacters] = useState([]);
+            const [stageTarget, setStageTarget] = useState(0);
+            const [whackedPositions, setWhackedPositions] = useState([]);
+            const [tapEffects, setTapEffects] = useState([]);
+            const [bonusTexts, setBonusTexts] = useState([]);
+            
+            const goodEmoji = "🇯🇵";
+            const badEmoji = "🇰🇷";
+            
+            const gameIntervalRef = useRef(null);
+            const characterTimersRef = useRef({});
+            const gameAreaRef = useRef(null);
+
+            const stageConfig = {
+                1: { startScore: 500, maxScore: 1000, time: 20, spawnRate: 1000, maxCharacters: 6 },
+                2: { startScore: 700, maxScore: 1400, time: 25, spawnRate: 900, maxCharacters: 8 },
+                3: { startScore: 900, maxScore: 1800, time: 30, spawnRate: 800, maxCharacters: 10 },
+                4: { startScore: 1100, maxScore: 2200, time: 35, spawnRate: 700, maxCharacters: 12 },
+                5: { startScore: 1300, maxScore: 2600, time: 40, spawnRate: 600, maxCharacters: 15 }
+            };
+
+            const getRandomPosition = () => {
+                const margin = 50;
+                const x = Math.random() * (400 - margin * 2) + margin;
+                const y = Math.random() * (400 - margin * 2) + margin;
+                return { x, y };
+            };
+
+            const moveCharacter = (characterId) => {
+                setCharacters(prev => prev.map(char => {
+                    if (char.id === characterId) {
+                        const newPosition = getRandomPosition();
+                        return { ...char, ...newPosition };
+                    }
+                    return char;
+                }));
+            };
+
+            const continuousMove = (characterId) => {
+                const moveStep = () => {
+                    setCharacters(prev => prev.map(char => {
+                        if (char.id === characterId && char.type === 'bad') {
+                            const deltaX = (Math.random() - 0.5) * 30;
+                            const deltaY = (Math.random() - 0.5) * 30;
+                            
+                            const margin = 50;
+                            const newX = Math.max(margin, Math.min(350, char.x + deltaX));
+                            const newY = Math.max(margin, Math.min(350, char.y + deltaY));
+                            
+                            return { ...char, x: newX, y: newY };
+                        }
+                        return char;
+                    }));
+                };
+                return setInterval(moveStep, 100);
+            };
+
+            const spawnCharacter = () => {
+                const config = stageConfig[stage];
+                if (characters.length >= config.maxCharacters) return;
+
+                const isGoodCharacter = Math.random() > 0.5;
+                const points = isGoodCharacter ? Math.floor(Math.random() * 20) + 20 : 0;
+                const position = getRandomPosition();
+                const newCharacter = {
+                    id: Date.now() + Math.random(),
+                    type: isGoodCharacter ? 'good' : 'bad',
+                    points,
+                    ...position,
+                    createdAt: Date.now()
+                };
+
+                setCharacters(prev => [...prev, newCharacter]);
+
+                let moveTimer, continuousTimer;
+
+                if (isGoodCharacter) {
+                    const baseSpeed = 800 - (stage - 1) * 150;
+                    const randomVariation = Math.random() * 200;
+                    const moveSpeed = Math.max(200, baseSpeed + randomVariation);
+                    
+                    moveTimer = setInterval(() => {
+                        if (gameStatus === 'playing') {
+                            moveCharacter(newCharacter.id);
+                        }
+                    }, moveSpeed);
+                } else {
+                    continuousTimer = continuousMove(newCharacter.id);
+                }
+
+                const removeTimer = setTimeout(() => {
+                    setCharacters(prev => {
+                        const character = prev.find(char => char.id === newCharacter.id);
+                        if (character && character.type === 'good') {
+                            setScore(current => Math.max(0, current - 200));
+                        }
+                        return prev.filter(char => char.id !== newCharacter.id);
+                    });
+                    if (moveTimer) clearInterval(moveTimer);
+                    if (continuousTimer) clearInterval(continuousTimer);
+                }, isGoodCharacter ? 4000 + Math.random() * 2000 : 10000 + Math.random() * 5000);
+
+                characterTimersRef.current[newCharacter.id] = { 
+                    moveInterval: moveTimer || continuousTimer, 
+                    removeTimer 
+                };
+            };
+
+            const catchCharacter = (character) => {
+                if (gameStatus !== 'playing') return;
+
+                const hitEffect = { x: character.x, y: character.y, id: Date.now() };
+                setWhackedPositions(prev => [...prev, hitEffect]);
+                
+                setTimeout(() => {
+                    setWhackedPositions(prev => prev.filter(pos => pos.id !== hitEffect.id));
+                }, 600);
+
+                if (character.type === 'good') {
+                    const config = stageConfig[stage];
+                    const newScore = Math.min(config.maxScore, score + character.points);
+                    setScore(newScore);
+                    
+                    const randomText = t.bonusTexts[Math.floor(Math.random() * t.bonusTexts.length)];
+                    
+                    const appearTime = Date.now() - character.createdAt;
+                    if (appearTime < 1000) {
+                        const bonusTextEffect = { 
+                            x: character.x, 
+                            y: character.y - 50, 
+                            id: Date.now() + Math.random(),
+                            text: randomText
+                        };
+                        setBonusTexts(prev => [...prev, bonusTextEffect]);
+                        
+                        setTimeout(() => {
+                            setBonusTexts(prev => prev.filter(bonus => bonus.id !== bonusTextEffect.id));
+                        }, 1500);
+                    }
+                } else {
+                    setScore(0);
+                }
+
+                setCharacters(prev => prev.filter(char => char.id !== character.id));
+
+                if (characterTimersRef.current[character.id]) {
+                    clearInterval(characterTimersRef.current[character.id].moveInterval);
+                    clearTimeout(characterTimersRef.current[character.id].removeTimer);
+                    delete characterTimersRef.current[character.id];
+                }
+            };
+
+            const handleGameAreaClick = (event) => {
+                if (gameStatus !== 'playing') return;
+
+                const rect = gameAreaRef.current.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+
+                const tapEffect = { x, y, id: Date.now() + Math.random() };
+                setTapEffects(prev => [...prev, tapEffect]);
+                
+                setTimeout(() => {
+                    setTapEffects(prev => prev.filter(effect => effect.id !== tapEffect.id));
+                }, 500);
+            };
+
+            const startGame = () => {
+                const config = stageConfig[stage];
+                setScore(config.startScore);
+                setTimeLeft(config.time);
+                setStageTarget(0);
+                setGameStatus('playing');
+
+                gameIntervalRef.current = setInterval(() => {
+                    setTimeLeft(prev => {
+                        if (prev <= 1) {
+                            setGameStatus('gameOver');
+                            return 0;
+                        }
+                        return prev - 1;
+                    });
+                }, 1000);
+            };
+
+            const resetGame = () => {
+                setScore(500);
+                setStage(1);
+                setCharacters([]);
+                setWhackedPositions([]);
+                setTapEffects([]);
+                setBonusTexts([]);
+                setGameStatus('setup');
+                if (gameIntervalRef.current) {
+                    clearInterval(gameIntervalRef.current);
+                }
+                Object.values(characterTimersRef.current).forEach(timers => {
+                    clearInterval(timers.moveInterval);
+                    clearTimeout(timers.removeTimer);
+                });
+                characterTimersRef.current = {};
+            };
+
+            const nextStage = () => {
+                setStage(prev => prev + 1);
+                setCharacters([]);
+                setWhackedPositions([]);
+                setTapEffects([]);
+                setBonusTexts([]);
+                setGameStatus('setup');
+                if (gameIntervalRef.current) {
+                    clearInterval(gameIntervalRef.current);
+                }
+                Object.values(characterTimersRef.current).forEach(timers => {
+                    clearInterval(timers.moveInterval);
+                    clearTimeout(timers.removeTimer);
+                });
+                characterTimersRef.current = {};
+            };
+
+            useEffect(() => {
+                let spawnInterval;
+                
+                if (gameStatus === 'playing') {
+                    const config = stageConfig[stage];
+                    spawnInterval = setInterval(() => {
+                        spawnCharacter();
+                    }, config.spawnRate);
+                }
+
+                return () => {
+                    if (spawnInterval) {
+                        clearInterval(spawnInterval);
+                    }
+                };
+            }, [gameStatus, stage, characters.length]);
+
+            useEffect(() => {
+                if (gameStatus === 'gameOver') {
+                    if (gameIntervalRef.current) {
+                        clearInterval(gameIntervalRef.current);
+                    }
+                    Object.values(characterTimersRef.current).forEach(timers => {
+                        clearInterval(timers.moveInterval);
+                        clearTimeout(timers.removeTimer);
+                    });
+                    characterTimersRef.current = {};
+
+                    if (score > 0) {
+                        setGameStatus('stageCleared');
+                    }
+                }
+            }, [gameStatus, score, stageTarget]);
+
+            useEffect(() => {
+                if (gameStatus === 'playing' && score <= 0) {
+                    setGameStatus('gameOver');
+                }
+            }, [score, gameStatus]);
+
+            return React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-green-800 to-green-900 p-4" },
+                React.createElement('div', { className: "max-w-4xl mx-auto" },
+                    React.createElement('div', { className: "bg-white rounded-lg shadow-lg p-6 mb-6" },
+                        React.createElement('h1', { className: "text-3xl font-bold text-center text-green-700 mb-4" }, 
+                            "🏝️ 独島防衛ゲーム 🏝️"
+                        ),
+                        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" },
+                            React.createElement('div', { className: "bg-blue-100 p-3 rounded-lg" },
+                                React.createElement('div', { className: "text-2xl font-bold text-blue-600" }, score),
+                                React.createElement('div', { className: "text-sm text-blue-500" }, "スコア")
+                            ),
+                            React.createElement('div', { className: "bg-purple-100 p-3 rounded-lg" },
+                                React.createElement('div', { className: "text-2xl font-bold text-purple-600" }, timeLeft),
+                                React.createElement('div', { className: "text-sm text-purple-500" }, "残り時間")
+                            ),
+                            React.createElement('div', { className: "bg-yellow-100 p-3 rounded-lg" },
+                                React.createElement('div', { className: "text-2xl font-bold text-yellow-600" }, `ステージ ${stage}`),
+                                React.createElement('div', { className: "text-sm text-yellow-500" }, "0点以上でクリア")
+                            )
+                        ),
+                        React.createElement('div', { className: "bg-gray-200 rounded-full h-6 relative overflow-hidden mb-2" },
+                            React.createElement('div', { 
+                                className: `h-full rounded-full transition-all duration-500 ease-out relative ${
+                                    score > stageConfig[stage].maxScore * 0.7 ? 'bg-gradient-to-r from-green-400 to-green-600' : 
+                                    score > stageConfig[stage].maxScore * 0.4 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' : 
+                                    'bg-gradient-to-r from-red-400 to-red-600'
+                                }`,
+                                style: { width: `${Math.min((score / stageConfig[stage].maxScore) * 100, 100)}%` }
+                            },
+                                React.createElement('div', { className: "absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" })
+                            ),
+                            React.createElement('div', { className: "absolute top-0 left-0 w-1 h-full bg-red-700" }),
+                            React.createElement('div', { className: "absolute top-0 right-0 w-1 h-full bg-yellow-500" })
+                        ),
+                        React.createElement('div', { className: "flex justify-between text-sm text-gray-600" },
+                            React.createElement('span', null, `現在: ${score}点`),
+                            React.createElement('span', { className: "text-yellow-600" }, `MAX: ${stageConfig[stage].maxScore}点`)
+                        )
+                    ),
+                    React.createElement('div', { className: "bg-white rounded-lg shadow-lg p-6 mb-6" },
+                        React.createElement('div', { 
+                            ref: gameAreaRef,
+                            className: "relative w-full h-96 bg-gradient-to-b from-green-600 to-green-700 rounded-lg border-4 border-green-800 overflow-hidden",
+                            style: { userSelect: 'none' },
+                            onClick: handleGameAreaClick
+                        },
+                            React.createElement('div', { className: "absolute top-4 left-1/2 transform -translate-x-1/2 text-6xl font-bold text-green-900 opacity-30 pointer-events-none z-0" }, "独島"),
+                            
+                            characters.map((character) =>
+                                React.createElement('div', {
+                                    key: character.id,
+                                    className: `absolute cursor-pointer transform -translate-x-1/2 -translate-y-1/2 hover:scale-110 ${
+                                        character.type === 'good' 
+                                            ? 'transition-all duration-300 ease-out'
+                                            : 'transition-all duration-1000 ease-in-out'
+                                    }`,
+                                    style: { 
+                                        left: `${character.x}px`, 
+                                        top: `${character.y}px`,
+                                        zIndex: 10
+                                    },
+                                    onClick: (e) => {
+                                        e.stopPropagation();
+                                        catchCharacter(character);
+                                    }
+                                },
+                                    React.createElement('div', { 
+                                        className: `text-4xl ${character.type === 'good' ? 'animate-bounce' : 'animate-pulse'}` 
+                                    }, character.type === 'good' ? goodEmoji : badEmoji)
+                                )
+                            ),
+
+                            tapEffects.map((effect) =>
+                                React.createElement('div', {
+                                    key: effect.id,
+                                    className: "absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none",
+                                    style: { 
+                                        left: `${effect.x}px`, 
+                                        top: `${effect.y}px`,
+                                        zIndex: 5
+                                    }
+                                },
+                                    React.createElement('div', { className: "text-4xl opacity-80 animate-bounce" }, "👟")
+                                )
+                            ),
+
+                            whackedPositions.map((pos) =>
+                                React.createElement('div', {
+                                    key: pos.id,
+                                    className: "absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none",
+                                    style: { 
+                                        left: `${pos.x}px`, 
+                                        top: `${pos.y}px`,
+                                        zIndex: 20
+                                    }
+                                },
+                                    React.createElement('div', { className: "text-5xl opacity-90 animate-ping" }, "💥")
+                                )
+                            ),
+
+                            bonusTexts.map((bonus) =>
+                                React.createElement('div', {
+                                    key: bonus.id,
+                                    className: "absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none",
+                                    style: { 
+                                        left: `${bonus.x}px`, 
+                                        top: `${bonus.y}px`,
+                                        zIndex: 25
+                                    }
+                                },
+                                    React.createElement('div', { className: "text-2xl font-bold text-yellow-400 animate-bounce drop-shadow-lg" }, bonus.text)
+                                )
+                            ),
+
+                            gameStatus === 'setup' && React.createElement('div', { className: "absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg" },
+                                React.createElement('div', { className: "text-center text-white bg-black bg-opacity-70 p-6 rounded-lg" },
+                                    React.createElement('div', { className: "text-4xl mb-4" }, "🎮"),
+                                    React.createElement('div', { className: "font-bold text-xl mb-2" }, t.gameReady),
+                                    React.createElement('div', { className: "text-sm" }, t.pressStart)
+                                )
+                            ),
+
+                            (gameStatus === 'gameOver' || gameStatus === 'stageCleared') && React.createElement('div', { className: "absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 rounded-lg" },
+                                React.createElement('div', { className: "text-center text-white bg-black bg-opacity-80 p-8 rounded-lg max-w-sm" },
+                                    gameStatus === 'stageCleared' ? (
+                                        React.createElement('div', null,
+                                            React.createElement('h3', { className: "text-3xl font-bold text-green-400 mb-4" }, "🎉 ステージクリア！ 🎉"),
+                                            React.createElement('p', { className: "mb-6 text-lg" }, "0点以上を維持してクリアしました！"),
+                                            React.createElement('div', { className: "flex flex-col gap-3" },
+                                                stage < 5 ? React.createElement('button', {
+                                                    onClick: nextStage,
+                                                    className: "bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-bold transition-colors text-lg"
+                                                }, "次のステージへ") : React.createElement('div', null,
+                                                    React.createElement('h3', { className: "text-2xl font-bold text-yellow-400 mb-4" }, "🏆 全ステージクリア！ 🏆"),
+                                                    React.createElement('p', { className: "mb-4" }, "おめでとうございます！")
+                                                ),
+                                                React.createElement('button', {
+                                                    onClick: resetGame,
+                                                    className: "bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-colors"
+                                                }, React.createElement(RotateCcw, { size: 20 }), "リセット")
+                                            )
+                                        )
+                                    ) : (
+                                        React.createElement('div', null,
+                                            React.createElement('h3', { className: "text-3xl font-bold text-red-400 mb-4" }, "💀 ゲームオーバー 💀"),
+                                            React.createElement('p', { className: "mb-6 text-lg" }, 
+                                                score > 0 ? `時間切れ！ 残り${score}点` : `スコア0点でゲームオーバー`
+                                            ),
+                                            React.createElement('div', { className: "flex flex-col gap-3" },
+                                                score > 0 && stage < 5 && React.createElement('button', {
+                                                    onClick: nextStage,
+                                                    className: "bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-bold transition-colors text-lg"
+                                                }, "次のステージへ"),
+                                                React.createElement('button', {
+                                                    onClick: resetGame,
+                                                    className: "bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-colors"
+                                                }, React.createElement(RotateCcw, { size: 20 }), "リセット")
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+
+                        React.createElement('div', { className: "flex justify-center gap-4 mt-4" },
+                            gameStatus === 'setup' && React.createElement('button', {
+                                onClick: startGame,
+                                className: "bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 transition-colors"
+                            }, React.createElement(Play, { size: 20 }), t.startButton)
+                        )
+                    ),
+
+                    React.createElement('div', { className: "bg-white rounded-lg shadow-lg p-6" },
+                        React.createElement('h3', { className: "font-bold mb-2" }, "ゲームの遊び方"),
+                        React.createElement('div', { className: "mb-4 p-3 bg-blue-50 rounded-lg" },
+                            React.createElement('p', { className: "text-sm text-blue-700 font-semibold mb-2" }, "キャラクター:"),
+                            React.createElement('div', { className: "flex justify-center gap-8" },
+                                React.createElement('div', { className: "text-center" },
+                                    React.createElement('div', { className: "text-3xl mb-1" }, "🇯🇵"),
+                                    React.createElement('div', { className: "text-xs text-blue-600 font-semibold" }, "討ち取る対象"),
+                                    React.createElement('div', { className: "text-xs text-gray-500" }, "+20〜40点 / 逃すと-200点")
+                                ),
+                                React.createElement('div', { className: "text-center" },
+                                    React.createElement('div', { className: "text-3xl mb-1" }, "🇰🇷"),
+                                    React.createElement('div', { className: "text-xs text-red-600 font-semibold" }, "絶対避ける"),
+                                    React.createElement('div', { className: "text-xs text-gray-500" }, "踏むと即座に0点")
+                                )
+                            )
+                        ),
+                        React.createElement('ul', { className: "text-sm text-gray-700 space-y-1" },
+                            React.createElement('li', null, "• 🇯🇵を討ち取ると+20〜40点、逃すと-200点の大幅減点"),
+                            React.createElement('li', null, "• 🇰🇷を踏むと即座に0点（一発ゲームオーバー）"),
+                            React.createElement('li', null, "• スコアが0になった瞬間にゲームオーバー"),
+                            React.createElement('li', null, "• ステージが上がるにつれて🇯🇵の移動速度が上がる"),
+                            React.createElement('li', null, "• 制限時間が短く、非常に戦略的なプレイが必要"),
+                            React.createElement('li', null, "• 制限時間内にスコアが1点以上残ればステージクリア")
+                        )
+                    )
+                )
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(FlySwatterGame));
+    </script>
+</body>
+</html>1000, time: 20, spawnRate: 1000, maxCharacters: 6 },
+                2: { startScore: 700, maxScore: 1400, time: 25, spawnRate: 900, maxCharacters: 8 },
+                3: { startScore: 900, maxScore: 1800, time: 30, spawnRate: 800, maxCharacters: 10 },
+                4: { startScore: 1100, maxScore: 2200, time: 35, spawnRate: 700, maxCharacters: 12 },
+                5: { startScore: 1300, maxScore: 2600, time: 40, spawnRate: 600, maxCharacters: 15 }
+            };
+
+            const getRandomPosition = () => {
+                const margin = 50;
+                const x = Math.random() * (400 - margin * 2) + margin;
+                const y = Math.random() * (400 - margin * 2) + margin;
+                return { x, y };
+            };
+
+            const moveCharacter = (characterId) => {
+                setCharacters(prev => prev.map(char => {
+                    if (char.id === characterId) {
+                        const newPosition = getRandomPosition();
+                        return { ...char, ...newPosition };
+                    }
+                    return char;
+                }));
+            };
+
+            const continuousMove = (characterId) => {
+                const moveStep = () => {
+                    setCharacters(prev => prev.map(char => {
+                        if (char.id === characterId && char.type === 'bad') {
+                            const deltaX = (Math.random() - 0.5) * 30;
+                            const deltaY = (Math.random() - 0.5) * 30;
+                            
+                            const margin = 50;
+                            const newX = Math.max(margin, Math.min(350, char.x + deltaX));
+                            const newY = Math.max(margin, Math.min(350, char.y + deltaY));
+                            
+                            return { ...char, x: newX, y: newY };
+                        }
+                        return char;
+                    }));
+                };
+
+                const continuousTimer = setInterval(moveStep, 100);
+                return continuousTimer;
+            };
+
+            const spawnCharacter = () => {
+                const config = stageConfig[stage];
+                if (characters.length >= config.maxCharacters) return;
+
+                const isGoodCharacter = Math.random() > 0.5;
+                const points = isGoodCharacter ? Math.floor(Math.random() * 20) + 20 : 0;
+                const position = getRandomPosition();
+                const newCharacter = {
+                    id: Date.now() + Math.random(),
+                    type: isGoodCharacter ? 'good' : 'bad',
+                    points,
+                    ...position,
+                    createdAt: Date.now()
+                };
+
+                setCharacters(prev => [...prev, newCharacter]);
+
+                let moveTimer, continuousTimer;
+
+                if (isGoodCharacter) {
+                    const baseSpeed = 800 - (stage - 1) * 150;
+                    const randomVariation = Math.random() * 200;
+                    const moveSpeed = Math.max(200, baseSpeed + randomVariation);
+                    
+                    moveTimer = setInterval(() => {
+                        if (gameStatus === 'playing') {
+                            moveCharacter(newCharacter.id);
+                        }
+                    }, moveSpeed);
+                } else {
+                    continuousTimer = continuousMove(newCharacter.id);
+                }
+
+                const removeTimer = setTimeout(() => {
+                    setCharacters(prev => {
+                        const character = prev.find(char => char.id === newCharacter.id);
+                        if (character && character.type === 'good') {
+                            setScore(current => Math.max(0, current - 200));
+                        }
+                        return prev.filter(char => char.id !== newCharacter.id);
+                    });
+                    if (moveTimer) clearInterval(moveTimer);
+                    if (continuousTimer) clearInterval(continuousTimer);
+                }, isGoodCharacter ? 4000 + Math.random() * 2000 : 10000 + Math.random() * 5000);
+
+                characterTimersRef.current[newCharacter.id] = { 
+                    moveInterval: moveTimer || continuousTimer, 
+                    removeTimer 
+                };
+            };
+
+            const catchCharacter = (character) => {
+                if (gameStatus !== 'playing') return;
+
+                const hitEffect = { x: character.x, y: character.y, id: Date.now() };
+                setWhackedPositions(prev => [...prev, hitEffect]);
+                
+                setTimeout(() => {
+                    setWhackedPositions(prev => prev.filter(pos => pos.id !== hitEffect.id));
+                }, 600);
+
+                if (character.type === 'good') {
+                    const config = stageConfig[stage];
+                    const newScore = Math.min(config.maxScore, score + character.points);
+                    setScore(newScore);
+                    
+                    const bonusTexts = ['ﾃﾊﾝﾐﾝｸﾞｸﾏﾝｾ', 'ｲﾙﾎﾞﾝﾁｭｺﾞﾗ', 'ｻｽｶﾞ', 'ﾁｮｱ', 'ﾏﾝｾ'];
+                    const randomText = bonusTexts[Math.floor(Math.random() * bonus
